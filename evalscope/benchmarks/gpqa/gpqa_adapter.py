@@ -12,6 +12,9 @@ from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 from evalscope.utils.multi_choices import FEW_SHOT_TEMPLATE, MultipleChoiceTemplate
 
+# Import limo parser for aligned answer extraction
+from evalscope.utils.limo_parser import extract_answer as limo_extract_answer, extract_multi_choice_answer
+
 logger = get_logger()
 
 
@@ -88,3 +91,15 @@ class GPQAAdapter(MultiChoiceAdapter):
             'choices': choices,
             'answer': f'{chr(65 + correct_answer_index)}',
         }
+    
+    def extract_answer(self, prediction: str, task_state) -> str:
+        """Override to use limo parser logic for alignment with infi-limo"""
+        # Handle </think> tags first
+        if "\n</think>\n" in prediction:
+            parts = prediction.split("\n</think>\n")
+            prediction = parts[-1]  # Use content after </think>
+        
+        # Use limo parser's multi-choice extraction directly
+        result = extract_multi_choice_answer(prediction)
+        
+        return result

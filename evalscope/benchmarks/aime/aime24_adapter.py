@@ -9,6 +9,9 @@ from evalscope.api.registry import register_benchmark
 from evalscope.constants import Tags
 from evalscope.utils.logger import get_logger
 
+# Import limo parser for aligned answer extraction
+from evalscope.utils.limo_parser import extract_answer as limo_extract_answer
+
 # flake8: noqa
 
 logger = get_logger()
@@ -48,3 +51,8 @@ class AIME24Adapter(DefaultDataAdapter):
                 'solution': record.get('solution', ''),
             },
         )
+    
+    def extract_answer(self, prediction: str, task_state) -> str:
+        """Override to use limo parser's extract_answer logic for alignment with infi-limo"""
+        # Use limo parser's extract_answer function instead of default logic
+        return limo_extract_answer(prediction)
