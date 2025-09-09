@@ -1,6 +1,7 @@
-accelerate
+colorlog
 datasets==3.6.0
-immutabledict
+docstring_parser
+dotenv
 jieba
 jsonlines
 langdetect
@@ -9,11 +10,13 @@ matplotlib
 modelscope[framework]>=1.27
 nltk>=3.9
 openai
+overrides
 pandas
 pillow
-pyarrow
+pydantic
 pyyaml>=5.1
 requests
+rich
 rouge-chinese
 rouge-score>=0.1.0
 sacrebleu
@@ -21,7 +24,6 @@ scikit-learn
 seaborn
 sympy
 tabulate
-torch
 tqdm
 transformers>=4.33
 word2number

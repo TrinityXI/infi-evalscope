@@ -42,6 +42,8 @@ async def get_requests(args: Arguments, api_plugin: 'ApiPluginBase') -> AsyncGen
         try:
             for messages in message_generator.build_messages():
                 dataset_messages.append(messages)
+                if len(dataset_messages) >= args.number:
+                    break
         except StopIteration:
             pass
 
@@ -189,7 +191,8 @@ async def benchmark(args: Arguments) -> Tuple[Dict, Dict]:
     await connect_test(args, api_plugin)
     # start statistic benchmark metric
     statistic_benchmark_metric_task = asyncio.create_task(
-        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin))
+        statistic_benchmark_metric(benchmark_data_queue, args, api_plugin)
+    )
     # start send request
     semaphore = asyncio.Semaphore(args.parallel)
     send_request_tasks: List[asyncio.Task] = []

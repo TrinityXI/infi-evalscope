@@ -1,6 +1,5 @@
 import os
 import subprocess
-import torch
 import uvicorn
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -10,6 +9,7 @@ from sse_starlette.sse import EventSourceResponse
 
 from evalscope.perf.arguments import Arguments
 from evalscope.utils.chat_service import ChatCompletionRequest, ChatService, ModelList, TextCompletionRequest
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -61,8 +61,12 @@ class ServerSentEvent(object):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     yield
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
+    try:
+        import torch
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+    except ImportError:
+        pass
 
 
 def create_app(model, attn_implementation=None) -> FastAPI:
@@ -98,10 +102,14 @@ def create_app(model, attn_implementation=None) -> FastAPI:
 def start_app(args: Arguments):
     logger.info('Starting local server, please wait...')
     if args.api == 'local':
+        check_import('torch', 'torch', raise_error=True)
+
         app = create_app(args.model, args.attn_implementation)
         uvicorn.run(app, host='0.0.0.0', port=args.port, workers=1)
 
     elif args.api == 'local_vllm':
+        import torch
+
         os.environ['VLLM_USE_MODELSCOPE'] = 'True'
         os.environ['VLLM_ALLOW_LONG_MAX_MODEL_LEN'] = '1'
         os.environ['VLLM_WORKER_MULTIPROC_METHOD'] = 'spawn'

@@ -1,9 +1,9 @@
 import numpy as np
-import os
 import random
-import torch
 from enum import Enum
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+
+from evalscope.utils.import_utils import check_import
 
 if TYPE_CHECKING:
     from transformers import GenerationConfig
@@ -69,8 +69,12 @@ def seed_everything(seed: int):
     """
     random.seed(seed)
     np.random.seed(seed)
-    torch.manual_seed(seed)
-    if torch.cuda.is_available():
-        torch.cuda.manual_seed_all(seed)
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
+
+    if check_import('torch'):
+        import torch
+
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+            torch.backends.cudnn.deterministic = True
+            torch.backends.cudnn.benchmark = False

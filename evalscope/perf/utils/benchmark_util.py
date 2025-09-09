@@ -1,8 +1,8 @@
 import time
-import torch
 from dataclasses import dataclass, field
 from typing import Any, List, Optional, Tuple
 
+from evalscope.utils.import_utils import check_import
 from evalscope.utils.logger import get_logger
 
 logger = get_logger()
@@ -33,8 +33,8 @@ class BenchmarkData:
         if len(self.chunk_times) > 1:
             self.first_chunk_latency = self.chunk_times[0] - self.start_time
             # remove the first chunk time from the total latency
-            self.time_per_output_token = (self.query_latency - self.first_chunk_latency) / (
-                self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
+            self.time_per_output_token = (self.query_latency - self.first_chunk_latency
+                                          ) / (self.completion_tokens - 1) if self.completion_tokens > 1 else 0.0
             self.inter_chunk_latency = [t2 - t1 for t1, t2 in zip(self.chunk_times[:-1], self.chunk_times[1:])]
         else:
             self.first_chunk_latency = self.query_latency
@@ -44,10 +44,13 @@ class BenchmarkData:
             api_plugin.parse_responses(self.response_messages, request=self.request)
 
     def update_gpu_usage(self):
-        total_memory = 0
-        for i in range(torch.cuda.device_count()):
-            total_memory += (torch.cuda.max_memory_allocated(i) / 2**30)  # GB
-        self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
+        if check_import('torch'):
+
+            import torch
+            total_memory = 0
+            for i in range(torch.cuda.device_count()):
+                total_memory += (torch.cuda.max_memory_allocated(i) / 2**30)  # GB
+            self.max_gpu_memory_cost = max(self.max_gpu_memory_cost, total_memory)
 
 
 class Metrics:
@@ -126,11 +129,13 @@ class BenchmarkMetrics:
             self.avg_completion_tokens = self.n_total_completion_tokens / self.n_succeed_queries
             self.avg_input_token_per_seconds = self.n_total_prompt_tokens / self.total_first_chunk_latency
             self.avg_output_token_per_seconds = self.n_total_completion_tokens / self.total_time
-            self.avg_total_token_per_seconds = (self.n_total_prompt_tokens
-                                                + self.n_total_completion_tokens) / self.total_time
+            self.avg_total_token_per_seconds = (
+                self.n_total_prompt_tokens + self.n_total_completion_tokens
+            ) / self.total_time
             self.avg_time_per_token = self.n_time_per_output_token / self.n_succeed_queries
             self.avg_inter_token_latency = sum(self.n_total_inter_token_latency) / len(
-                self.n_total_inter_token_latency) if self.n_total_inter_token_latency else 0.0
+                self.n_total_inter_token_latency
+            ) if self.n_total_inter_token_latency else 0.0
             self.qps = self.n_succeed_queries / self.total_time
         except ZeroDivisionError as e:
             logger.exception(e)
