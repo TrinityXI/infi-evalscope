@@ -24,6 +24,7 @@
 | `general_qa` | [General-QA](#general-qa) | `Custom`, `QA` |
 | `gpqa_diamond` | [GPQA-Diamond](#gpqa-diamond) | `Knowledge`, `MCQ` |
 | `gsm8k` | [GSM8K](#gsm8k) | `Math`, `Reasoning` |
+| `health_bench` | [HealthBench](#healthbench) | `Knowledge`, `QA` |
 | `hellaswag` | [HellaSwag](#hellaswag) | `Commonsense`, `Knowledge`, `MCQ` |
 | `hle` | [Humanity's-Last-Exam](#humanitys-last-exam) | `Knowledge`, `QA` |
 | `humaneval` | [HumanEval](#humaneval) | `Coding` |
@@ -35,6 +36,7 @@
 | `mmlu` | [MMLU](#mmlu) | `Knowledge`, `MCQ` |
 | `mmlu_pro` | [MMLU-Pro](#mmlu-pro) | `Knowledge`, `MCQ` |
 | `mmlu_redux` | [MMLU-Redux](#mmlu-redux) | `Knowledge`, `MCQ` |
+| `multi_if` | [Multi-IF](#multi-if) | `InstructionFollowing`, `MultiLingual`, `MultiTurn` |
 | `musr` | [MuSR](#musr) | `MCQ`, `Reasoning` |
 | `needle_haystack` | [Needle-in-a-Haystack](#needle-in-a-haystack) | `LongContext`, `Retrieval` |
 | `process_bench` | [ProcessBench](#processbench) | `Math`, `Reasoning` |
@@ -560,6 +562,34 @@ Reasoning:
 
 ---
 
+### HealthBench
+
+[返回目录](#llm评测集)
+- **数据集名称**: `health_bench`
+- **数据集ID**: [openai-mirror/healthbench](https://modelscope.cn/datasets/openai-mirror/healthbench/summary)
+- **数据集描述**:  
+  > HealthBench: a new benchmark designed to better measure capabilities of AI systems for health. Built in partnership with 262 physicians who have practiced in 60 countries, HealthBench includes 5,000 realistic health conversations, each with a custom physician-created rubric to grade model responses.
+- **任务类别**: `Knowledge`, `QA`
+- **评估指标**: `accuracy`, `communication_quality`, `completeness`, `context_awareness`, `instruction_following`
+- **需要LLM Judge**: 是
+- **默认提示方式**: 0-shot
+- **数据集子集**: `communication`, `complex_responses`, `context_seeking`, `emergency_referrals`, `global_health`, `health_data_tasks`, `hedging`
+
+- **额外参数**: 
+```json
+{
+    "version": "# File version, choose from ['Consensus', 'Hard', 'All'], default to Consensus"
+}
+```
+- **提示模板**: 
+```text
+Answer the question:
+
+{question}
+```
+
+---
+
 ### HellaSwag
 
 [返回目录](#llm评测集)
@@ -836,6 +866,28 @@ Answer the following multiple choice question. The last line of your response sh
 {question}
 
 {choices}
+```
+
+---
+
+### Multi-IF
+
+[返回目录](#llm评测集)
+- **数据集名称**: `multi_if`
+- **数据集ID**: [facebook/Multi-IF](https://modelscope.cn/datasets/facebook/Multi-IF/summary)
+- **数据集描述**:  
+  > Multi-IF is a benchmark designed to evaluate the performance of LLM models' capabilities in multi-turn instruction following within a multilingual environment.
+- **任务类别**: `InstructionFollowing`, `MultiLingual`, `MultiTurn`
+- **评估指标**: `inst_level_loose`, `inst_level_strict`, `prompt_level_loose`, `prompt_level_strict`
+- **需要LLM Judge**: 否
+- **默认提示方式**: 0-shot
+- **数据集子集**: `Chinese`, `English`, `French`, `German`, `Hindi`, `Italian`, `Portuguese`, `Russian`, `Spanish`, `Thai`, `Vietnamese`
+
+- **额外参数**: 
+```json
+{
+    "max_turns": 3
+}
 ```
 
 ---
