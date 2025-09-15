@@ -130,7 +130,7 @@ setup_container() {
             source /lustre/projects/polyullm/miniconda3/etc/profile.d/conda.sh
             conda activate /lustre/projects/polyullm/likunxi/envs/evalmom
             echo '容器环境已准备就绪'
-            echo '请在新终端中切换到evalscope_workflow.sh所在的文件夹，运行: bash $0 --start-vllm'
+            echo '请在新终端中切换到eval_all.sh所在的文件夹，运行: bash $0 --start-vllm'
             bash
         "
     else
@@ -292,6 +292,30 @@ generate_dataset_args() {
         "filters": {"remove_until": "</think>"},
         "system_prompt": "$system_prompt",
 	"eval_split": "val"
+    },
+    "aime24": {
+        "local_path": "/lustre/projects/polyullm/llm-eval/datasets/aime_2024/data",
+        "few_shot_num": 0,
+        "filters": {"remove_until": "</think>"},
+        "system_prompt": "$system_prompt"
+    },
+    "aime25": {
+        "local_path": "/lustre/projects/polyullm/llm-eval/datasets/AIME2025",
+        "few_shot_num": 0,
+        "filters": {"remove_until": "</think>"},
+        "system_prompt": "$system_prompt"
+    },
+    "gpqa": {
+        "local_path": "/lustre/projects/polyullm/llm-eval/datasets/gpqa",
+        "few_shot_num": 5,
+        "filters": {"remove_until": "</think>"},
+        "system_prompt": "$system_prompt"
+    },
+    "math_500": {
+        "local_path": "/lustre/projects/polyullm/llm-eval/datasets/MATH-500",
+        "few_shot_num": 0,
+        "filters": {"remove_until": "</think>"},
+        "system_prompt": "$system_prompt"
     }
 }
 EOF
@@ -312,6 +336,7 @@ run_evaluation() {
     echo "$dataset_args_json"
     
     # 创建评测命令 - 使用上面配置的评测参数 (调试时，可设置--limit 5，每个benchmark只跑5条数据)
+    # 如果需要测试BBH，请将BBH放在最后，因为BBH部分子集需重新评估脚本通过最大时间戳找BBH prediction目录
     evalscope eval \
         --model $EVAL_MODEL \
         --generation-config "{\"do_sample\": true, \"temperature\": $EVAL_TEMPERATURE, \"top_p\": $EVAL_TOP_P, \"max_new_tokens\": $EVAL_MAX_NEW_TOKENS, \"n\": $EVAL_N}" \
@@ -319,7 +344,7 @@ run_evaluation() {
         --api-key EMPTY \
         --eval-type service \
         --work-dir $EVAL_WORK_DIR \
-        --datasets gsm8k competition_math humaneval arc mmlu ifeval drop hellaswag bbh\
+        --datasets gsm8k competition_math humaneval arc mmlu ifeval drop hellaswag aime24 aime25 gpqa math_500 bbh\
         --dataset-args "$dataset_args_json" \
         --eval-batch-size $EVAL_BATCH_SIZE \
         --stream
