@@ -313,6 +313,7 @@ def main():
         default="qwen",
     )
     
+    oringin_json_dir = args.json_dir
     args = parser.parse_args()
     args.json_dir = find_latest_timestamp_dir(args.json_dir)
     # List of tasks with potential evaluation issues (modify as needed)
@@ -325,7 +326,7 @@ def main():
         "bbh_hyperbaton",
         "bbh_sports_understanding"
     ]
-    cur_path = os.getcwd()
+    cur_path = oringin_json_dir
     json_dir_base = os.path.basename(args.json_dir)
     if json_dir_base == "": # "bbh_json/"
         if args.json_dir[-1] == "/":
