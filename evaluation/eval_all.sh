@@ -48,7 +48,7 @@ EVAL_TEMPERATURE=0.0               # 生成温度 - 控制输出的随机性 (0.
 EVAL_TOP_P=1                        # Top-p采样参数 - 1.0表示不限制
 EVAL_MAX_NEW_TOKENS=4096            # 最大生成长度 - 根据任务需求调整
 EVAL_N=1                           # 采样次数 - 用于Pass@k计算
-EVAL_WORK_DIR="/lustre/projects/polyullm/$USER/evalscope_eval/"              # 评测结果输出目录
+EVAL_WORK_DIR="/lustre/projects/polyullm/$USER/evalscope_eval/$MODEL_NAME"     # 评测结果输出目录
 EVAL_BATCH_SIZE=32                  # 评测批次大小 - 根据GPU显存调整
 
 # 定义模型到system prompt的映射
