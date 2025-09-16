@@ -313,8 +313,8 @@ def main():
         default="qwen",
     )
     
-    oringin_json_dir = args.json_dir
     args = parser.parse_args()
+    oringin_json_dir = args.json_dir
     args.json_dir = find_latest_timestamp_dir(args.json_dir)
     # List of tasks with potential evaluation issues (modify as needed)
     re_evaluate_tasks = [
