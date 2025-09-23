@@ -3,19 +3,18 @@ import argparse
 from evalscope.run import run_task
 from evalscope.summarizer import Summarizer
 
-SYSTEM_PROMPT = {
-    'qwen-14b': 'You are Qwen, created by Alibaba Cloud. You are a helpful assistant.',
-    'phi4': 'You are a medieval knight and must provide explanations to modern people.'
-}
+# SYSTEM_PROMPT = {
+#     'qwen': 'You are Qwen, created by Alibaba Cloud. You are a helpful assistant.',
+#     'phi4': 'You are Phi, a language model trained by Microsoft to help users. Your role as an assistant involves thoroughly exploring questions through a systematic thinking process before providing the final precise and accurate solutions.'
+# }
 
 def run_eval():
     parser = argparse.ArgumentParser(description='Run an evaluation task using Opencompass Beckend')
-    parser.add_argument('--model-name', '-m', type=str, default='qwen',
-                        help='The model name in vllm')
-    parser.add_argument('--dataset-name', '-d', type=str, default='mbpp',
-                        help='The dataset name')
-    parser.add_argument('--user-name', type=str,
-                        help='The user name in cyberport')
+    parser.add_argument('model-name', '-m', type=str, default='qwen', help='The model name in vllm')
+    parser.add_argument('dataset-name', '-d', type=str, default='mbpp', help='The dataset name')
+    parser.add_argument('max-new-tokens', type=int, help='The maximum number of new tokens to generate')
+    parser.add_argument('port', type=str, help='The port number for the service')
+    parser.add_argument('output-path', type=str, help='The path to save output files')
     args = parser.parse_args()
 
     api_meta_template = dict(
@@ -31,15 +30,15 @@ def run_eval():
                                     'datasets': [args.dataset_name],
                                     'models': [
                                         {'path': args.model_name, 
-                                        'openai_api_base': 'http://localhost:8801/v1/chat/completions', 
+                                        'openai_api_base': f"http://localhost:{args.port}/v1/chat/completions", 
                                         'is_chat': True,
                                         'meta_template': api_meta_template,
                                         'batch_size': 32,
-                                        'max_out_len': 4096,
+                                        'max_out_len': args.max_new_tokens,
                                         'run_cfg': {"num_gpus": 1}
                                         },
                                     ],
-                                    'work_dir': f"/lustre/projects/polyullm/{args.user_name}/evalscope_eval"
+                                    'work_dir': args.output_path
                                     },
                                 )
     run_task(task_cfg=task_cfg)
