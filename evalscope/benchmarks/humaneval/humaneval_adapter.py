@@ -1,7 +1,5 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import re
-import tempfile
-import os.path as osp
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.utils.logger import get_logger
@@ -25,7 +23,7 @@ logger = get_logger()
     train_split=None,
     eval_split='test',
     prompt_template=
-    'Complete the following python code and directly give the correct answer without using <\think>:\n{query}',  # noqa: E501
+    'Read the following function signature and docstring, and fully implement the function described. Your response should only contain the code for this function.\n{query}',  # noqa: E501
     extra_params={
         'num_workers': 4,
         'timeout': 4
@@ -38,8 +36,8 @@ class HumanevalAdapter(DataAdapter):
 
     def __init__(self, **kwargs):
         try:
-            from human_eval.data import stream_jsonl, write_jsonl, HUMAN_EVAL
-            from human_eval.evaluation import evaluate_functional_correctness
+            from human_eval.data import stream_jsonl, write_jsonl
+            from human_eval.evaluation import check_correctness
         except ImportError:
             raise ImportError('Please install human_eval:'
                               'https://github.com/openai/human-eval/tree/master#installation , '
@@ -47,14 +45,13 @@ class HumanevalAdapter(DataAdapter):
         super().__init__(**kwargs)
 
         extra_params = kwargs.get('extra_params', {})
-        self.k = [1, 10, 100]
+        self.k = [1]
         self.num_workers = extra_params.get('num_workers', 4)
         self.timeout = extra_params.get('timeout', 4)
-        self.problem_file = HUMAN_EVAL
 
         self.read_problems_func = stream_jsonl
         self.write_jsonl_func = write_jsonl
-        self.eval_func = evaluate_functional_correctness
+        self.eval_func = check_correctness
 
     def load_from_disk(self, dataset_name_or_path, subset_list, work_dir, **kwargs) -> dict:
         data_dict = {}
@@ -83,7 +80,7 @@ class HumanevalAdapter(DataAdapter):
         blocks = re.findall(r'```\w*\n(.*?)```', text, re.DOTALL)
         if len(blocks) >= 1:
             text = blocks[0]
-        return text.lstrip()
+        return text
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
         return self._postprocess(result)
@@ -92,14 +89,5 @@ class HumanevalAdapter(DataAdapter):
         return input_d
 
     def match(self, gold: str, pred: str) -> float:
-        humaneval_preds = [{'task_id': gold, 'completion': pred}]
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            out_dir = osp.join(tmp_dir, 'human_eval.json')
-            self.write_jsonl_func(out_dir, humaneval_preds)
-            score = self.eval_func(out_dir, self.k, n_workers=self.num_workers, timeout=self.timeout, problem_file=self.problem_file)
-
-            detail_path = osp.join(tmp_dir, 'human_eval.json_results.jsonl')
-            with open(detail_path, 'r') as f:
-                for index, line in enumerate(f):
-                    res = line['passed']
-        return float(res)
+        res = self.eval_func(gold, pred, self.timeout)
+        return float(res['passed'])

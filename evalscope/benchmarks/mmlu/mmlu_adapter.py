@@ -1,7 +1,6 @@
 # Copyright (c) Alibaba, Inc. and its affiliates.
 import csv
 import os
-import re
 
 from evalscope.benchmarks import Benchmark, DataAdapter
 from evalscope.constants import EvalType, OutputType
@@ -149,7 +148,7 @@ SUBJECT_MAPPING = {
     train_split='train',
     eval_split='test',
     prompt_template=
-    'Given the following question and four candidate answers (A, B, C and D), choose the answer.\nQuestion: {query}\n\nFor simple problems:\nDirectly provide the answer with minimal explanation.\n\n- For complex problems:\nUse this step-by-step format:\n## Step 1: [Concise description]\n[Brief explanation]\n## Step 2: [Concise description]\n[Brief explanation]\n\nRegardless of the approach, always conclude with:\nThe answer is [the_answer_letter].\nwhere the [the_answer_letter] is one of A, B, C or D.\n\nLet\'s think step by step.\n'
+    """Answer the following multiple choice question about {subset_name}. The last line of your response should be of the following format: 'Answer: $LETTER' (without quotes) where LETTER is one of ABCD. Think step by step before answering.\n\n{query}""",  # noqa: E501
 )
 class MMLUAdapter(DataAdapter):
 
@@ -229,7 +228,7 @@ class MMLUAdapter(DataAdapter):
         context: str = '\n'.join(few_shot_prompts) + '\n'
         context += self._generate_prompt(input_d=input_d, include_answer=False)
 
-        full_prompt = self.prompt_template.format(query=context.strip())
+        full_prompt = self.prompt_template.format(subset_name=self._format_subject(subset_name), query=context.strip())
 
         return self.gen_prompt_data(full_prompt)
 
@@ -252,7 +251,7 @@ class MMLUAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            return first_option_postprocess(result)
+            return ResponseParser.parse_first_option(result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
@@ -263,10 +262,12 @@ class MMLUAdapter(DataAdapter):
 
         example: str = input_d['input']
         for j in range(len(self.choices)):
-            example += f'\n{self.choices[j]}. {input_choices[j]}'
+            example += f'\n{self.choices[j]}) {input_choices[j]}'
 
         if include_answer:
             example += f"\nAnswer: {input_d['target']}\n\n"
+        else:
+            example += '\nAnswer: \n\n'
 
         return example
 
@@ -277,86 +278,3 @@ class MMLUAdapter(DataAdapter):
         for entry in l:
             s += ' ' + entry
         return s
-
-
-#################################
-# Copy from opencompass
-def first_option_postprocess(text: str, options: str = 'ABCD', cushion=True) -> str:
-    """Find first valid option for text."""
-
-    # yapf: disable
-    # flake8: noqa: W605
-    patterns = [
-        f'答案是?\s*([{options}])',
-        f'答案是?\s*：\s*([{options}])',
-        f'答案是?\s*:\s*([{options}])',
-        f'答案选项应?该?是\s*([{options}])',
-        f'答案选项应?该?为\s*([{options}])',
-        f'答案应该?是\s*([{options}])',
-        f'答案应该?选\s*([{options}])',
-        f'答案选项为?\s*：\s*([{options}])',
-        f'答案选项为?\s+\(?\*?\*?([{options}])\*?\*?\)?',
-        f'答案选项是?\s*:\s*([{options}])',
-        f'答案为\s*([{options}])',
-        f'答案选\s*([{options}])',
-        f'选择?\s*([{options}])',
-        f'故选?\s*([{options}])'
-        f'只有选?项?\s?([{options}])\s?是?对',
-        f'只有选?项?\s?([{options}])\s?是?错',
-        f'只有选?项?\s?([{options}])\s?不?正确',
-        f'只有选?项?\s?([{options}])\s?错误',
-        f'说法不?对选?项?的?是\s?([{options}])',
-        f'说法不?正确选?项?的?是\s?([{options}])',
-        f'说法错误选?项?的?是\s?([{options}])',
-        f'([{options}])\s?是正确的',
-        f'([{options}])\s?是正确答案',
-        f'选项\s?([{options}])\s?正确',
-        f'所以答\s?([{options}])',
-        f'所以\s?([{options}][.。$]?$)',
-        f'所有\s?([{options}][.。$]?$)',
-        f'[\s，：:,]([{options}])[。，,\.]?$',
-        f'[\s，,：:][故即]([{options}])[。\.]?$',
-        f'[\s，,：:]因此([{options}])[。\.]?$',
-        f'[是为。]\s?([{options}])[。\.]?$',
-        f'因此\s?([{options}])[。\.]?$',
-        f'显然\s?([{options}])[。\.]?$',
-        f'答案是\s?(\S+)(?:。|$)',
-        f'答案应该是\s?(\S+)(?:。|$)',
-        f'答案为\s?(\S+)(?:。|$)',
-        f'(?i)ANSWER\s*:\s*([{options}])',
-        f'[Tt]he answer is:?\s+\(?([{options}])\)?',
-        f'[Tt]he answer is:?\s+\(?\*?\*?([{options}])\*?\*?\)?',
-        f'[Tt]he answer is option:?\s+\(?([{options}])\)?',
-        f'[Tt]he correct answer is:?\s+\(?([{options}])\)?',
-        f'[Tt]he correct answer is option:?\s+\(?([{options}])\)?',
-        f'[Tt]he correct answer is:?.*?boxed{{([{options}])}}',
-        f'[Tt]he correct option is:?.*?boxed{{([{options}])}}',
-        f'[Tt]he correct answer option is:?.*?boxed{{([{options}])}}',
-        f'[Tt]he answer to the question is:?\s+\(?([{options}])\)?',
-        f'^选项\s?([{options}])',
-        f'^([{options}])\s?选?项',
-        f'(\s|^)[{options}][\s。，,：:\.$]',
-        f'1.\s?(.*?)$',
-        f'1.\s?([{options}])[.。$]?$',
-    ]
-    cushion_patterns = [
-        f'([{options}]):',
-        f'([{options}])',
-    ]
-    # flake8: noqa
-    # yapf: enable
-
-    if cushion:
-        patterns.extend(cushion_patterns)
-    for pattern in patterns:
-        text = text.strip()
-        match = re.search(pattern, text, re.DOTALL)
-        if match:
-            if match.group(1) is not None and match.group(1) != '':
-                outputs = match.group(1)
-            else:
-                outputs = match.group(0)
-            for i in options:
-                if i in outputs:
-                    return i
-    return ''

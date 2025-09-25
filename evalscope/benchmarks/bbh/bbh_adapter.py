@@ -203,12 +203,13 @@ class BBHAdapter(DataAdapter):
         if task_type == MULTIPLE_CHOICE:
             return self._extract_mc_answer(result)
         elif task_type == FREE_FORM:
-            return self._extract_ff_answer(result)
+            return self._extract_ff_answer_plus(result)
         else:
             raise ValueError(f'Invalid task type: {task_type}')
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=gold, pred=pred)
+
 
     @classmethod
     def _extract_mc_answer(cls, ans: str) -> str:
@@ -245,3 +246,30 @@ class BBHAdapter(DataAdapter):
 
         return ans
 
+    @classmethod
+    def _extract_ff_answer_plus(cls, ans: str) -> str:
+        patterns = [
+            r'answer is\s*(.*?)(?:[\n。.!?]|$)', 
+            r'result is\s*(.*?)(?:[\n。.!?]|$)',  
+            r'<answer>(.*?)</answer>',        
+            r'result of the expression is:?\s*(.*?)(?:[\n。.!?]|$)',
+        ]
+    
+        matches = []
+        for pattern in patterns:
+            for match in re.finditer(pattern, ans, re.IGNORECASE):
+                extracted = match.group(1).strip()
+                if extracted.endswith('.'):
+                    extracted = extracted[:-1].strip()
+                matches.append((extracted, match.end()))
+        if matches:
+            return max(matches, key=lambda x: x[1])[0]
+    
+        # 后备方案：取最后一个非空行并清理
+        lines = [line.strip() for line in ans.split('\n') if line.strip()]
+        if lines:
+            extracted = lines[-1]
+            if extracted.endswith('.'):
+                extracted = extracted[:-1].strip()
+            return extracted
+        return ans.strip()

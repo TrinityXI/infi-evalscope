@@ -111,24 +111,7 @@ class HellaSwagAdapter(DataAdapter):
         if self.model_adapter == OutputType.MULTIPLE_CHOICE:
             return result
         else:
-            options = ResponseParser.process_options(self.choices)
-            patterns = [
-                # f'[\s|^]([{options}])[\s。，,：:\.$]',
-                f'[\s|^]([{options}])[。，,：:\.$]',
-                f'1.\s?([{options}])[.。$]?$',
-                f'([{options}]):',
-                f'([{options}])',
-            ]
-            regexes = [re.compile(pattern) for pattern in patterns]
-            for regex in regexes:
-                matches = regex.search(result)
-                if matches:
-                    return matches.group(1)
-            # If no match found, try to find the last capital letter in the text
-            last_capital = ResponseParser.parse_last_capital(result, options)
-            if last_capital:
-                return last_capital
-            return ""
+            return ResponseParser.parse_first_option_with_choices(result, options=self.choices)
 
     def match(self, gold: str, pred: str) -> float:
         return exact_match(gold=str(gold), pred=str(pred))

@@ -15,15 +15,15 @@ from evalscope.metrics import Metric, mean, metric_registry
     dataset_id='opencompass/ifeval',
     subset_list=['default'],
     metric_list=[
-        'prompt_level_strict_acc',
-        'inst_level_strict_acc',
-        'prompt_level_loose_acc',
         'inst_level_loose_acc',
+        'prompt_level_loose_acc',
+        'inst_level_strict_acc',
+        'prompt_level_strict_acc',
     ],
     few_shot_num=0,
     train_split=None,
     eval_split='train',
-    prompt_template='{query}\nPlease directly give the correct answer:',
+    prompt_template='{query}',
 )
 class IFEvalAdapter(DataAdapter):
 

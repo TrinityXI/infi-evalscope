@@ -24,7 +24,7 @@ logger = get_logger()
     few_shot_num=4,
     train_split=None,
     eval_split='test',
-    prompt_template='{question}\nPlease reason step by step, and put your final answer within \\boxed{}.',
+    prompt_template='{query}\nPlease reason step by step, and put your final answer within \\boxed{{}}.',
 )
 class GSM8KAdapter(DataAdapter):
 
@@ -101,7 +101,7 @@ class GSM8KAdapter(DataAdapter):
             The parsed answer. Depending on the dataset. Usually a string for chat.
         """
         # Note: to use same extraction method for both of checkpoint and custom.
-        return self.extract_answer(result)
+        return self.extract_answer_in_boxed(result)
 
     def match(self, gold: str, pred: str) -> float:
         """
@@ -154,14 +154,16 @@ class GSM8KAdapter(DataAdapter):
             print(f'No digits found in {s!r}', flush=True)
 
         return last_digit
-    def extract_answer(s: str) -> str:
+
+    @staticmethod
+    def extract_answer_in_boxed(s: str) -> str:
         _PAT_BOXED = re.compile(r'\\boxed{([^}]*)}')
         match = list(_PAT_BOXED.finditer(s))
-        
+
         if match:
             boxed_content = match[-1].group(1)
             digit_match = re.search(r'[-+]?[\d,]+\.?\d*', boxed_content)
-            
+
             if digit_match:
                 last_digit = digit_match.group().replace(',', '').replace('+', '').strip().strip('.')
                 return last_digit
