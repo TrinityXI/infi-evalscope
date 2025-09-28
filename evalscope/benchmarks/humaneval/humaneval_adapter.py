@@ -76,7 +76,7 @@ class HumanevalAdapter(DataAdapter):
         return self.gen_prompt_data(full_prompt)
 
     @classmethod
-    def _postprocess(text: str) -> str:
+    def _postprocess(cls, text: str) -> str:
         # Extract the part after </think>
         if "</think>" in text:
             text = text.split("</think>", 1)[1]
@@ -89,10 +89,10 @@ class HumanevalAdapter(DataAdapter):
         blocks = re.findall(r'```\w*\n(.*?)```', text, re.DOTALL)
         if blocks:
             candidate = blocks[0].strip()
-            if candidate:   # If not empty, return it with priority
+            if candidate:   # Return with priority if not empty
                 return candidate
 
-        # Otherwise return the whole text
+        # Otherwise, return the whole text
         return text.strip()
 
     def parse_pred_result(self, result: str, raw_input_d: dict = None, eval_type: str = 'checkpoint') -> str:
